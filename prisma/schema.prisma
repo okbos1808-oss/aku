@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model User {
+  id            String       @id @default(cuid())
+  name          String?
+  email         String?      @unique
+  emailVerified DateTime?    @map("email_verified")
+  image         String?
+  password      String?
+  role          String       @default("user")
+  permohonan    Permohonan[]
+  accounts      Account[]
+  sessions      Session[]
+  validasi      Validasi[]
+
+  @@map("users")
+}
+
+model Permohonan {
+  id          String           @id @default(cuid())
+  userId      String
+  namaUsaha   String
+  jenisIzin   String
+  alamat      String
+  fileDokumen String
+  nib         String?
+  bpom        String?
+  halal       String?
+  status      StatusPermohonan @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  user        User             @relation(fields: [userId], references: [id])
+  pembayaran  Pembayaran?
+  validasi    Validasi?
+}
+
+model Validasi {
+  id           String     @id @default(cuid())
+  permohonanId String     @unique
+  adminId      String
+  status       String
+  catatan      String?
+  createdAt    DateTime   @default(now())
+  admin        User       @relation(fields: [adminId], references: [id])
+  permohonan   Permohonan @relation(fields: [permohonanId], references: [id], onDelete: Cascade)
+
+  @@map("validasi")
+}
+
+model Pembayaran {
+  id           String     @id @default(cuid())
+  permohonanId String     @unique
+  buktiBayar   String
+  status       String     @default("MENUNGGU_VERIFIKASI")
+  createdAt    DateTime   @default(now())
+  permohonan   Permohonan @relation(fields: [permohonanId], references: [id], onDelete: Cascade)
+
+  @@map("pembayaran")
+}
+
+enum StatusPermohonan {
+  PENDING
+  DISETUJUI
+  DITOLAK
+  MENUNGGU_PEMBAYARAN
+  MENUNGGU_VERIFIKASI_PEMBAYARAN
+  MENUNGGU_SERTIFIKAT
+  SERTIFIKAT_TERSEDIA
+}
