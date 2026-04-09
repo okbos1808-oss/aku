@@ -24,7 +24,7 @@ export const getProductByUser = async () => {
   const { id, role } = session.user;
 
   try {
-    const products = await prisma.product.findMany({
+    const products = await prisma.permohonan.findMany({
       where: role === "admin" ? undefined : { userId: id },
       include: { user: { select: { name: true } } },
     });
